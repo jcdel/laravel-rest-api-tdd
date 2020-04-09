@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use Carbon\Carbon;
 use App\User;
 
 class AuthController extends Controller
@@ -20,7 +21,7 @@ class AuthController extends Controller
 
         $token = auth()->login($user);
 
-        return $this->respondWithToken($token);
+        return response()->json($user, 201);
     }
 
     public function login(LoginRequest $request)
@@ -31,22 +32,25 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid Email or Password'], 401);
         }
 
-        return $this->respondWithToken($token);
+        return response()->json([
+            'token' => $token,
+            'token_type' => 'bearer',
+            'expires_at' => Carbon::now()->addWeeks(1)->toDateTimeString()
+        ], 200);
     }
 
     public function logout()
     {
+        if(!auth()->user())
+
+            return response()->json([
+                'message' => 'Unable to Logout'
+            ], 401);
+
         auth()->logout();
 
-        return response()->json(['message' => 'Successfully logged out']);
-    }
-
-    protected function respondWithToken($token)
-    {
         return response()->json([
-            'access_token' => $token,
-            'token_type'   => 'bearer',
-            'expires_in'   => auth()->factory()->getTTL() * 60
-        ]);
-    }
+            'message' => 'Successfully logged out'
+        ], 200);
+}
 }

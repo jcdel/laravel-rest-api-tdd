@@ -13,46 +13,42 @@ class AuthTest extends TestCase
 
     public function testRegister()
     {
-        // Create test user data
-        $data = [
+        $user = factory(User::class)->create();
+
+        $this->postJson(route('api.register'), [
+            'name' => $user->name,
             'email' => 'test@gmail.com',
-            'name' => 'Test',
-            'password' => 'secret1234',
-            'password_confirmation' => 'secret1234',
-        ];
+            'password' => $user->password,
+            'password_confirmation' => $user->password,
+        ])
+        ->assertCreated()
+        ->assertJsonStructure(['email']);
 
-        // Send a post request
-        $response = $this->postJson(route('api.register'), $data);
-
-        $response
-            ->assertStatus(200)
-            ->assertJson($response->json());
     }
 
     public function testLogin()
     {
-        // Creating Users
-        User::create([
-            'name' => 'test',
-            'email'=>'test@gmail.com',
-            'password' => bcrypt('secret1234')
-        ]);
-        
-        // Simulate login using created user
-        $response = $this->postJson(route('api.login'), [
-            'email' => 'test@gmail.com',
-            'password' => 'secret1234',
+        $user = factory(User::class)->create([
+            'password' => bcrypt($password = 'secret1234')
         ]);
 
-        //$response->dump();
-
-        $data = [
-            'token_type' => 'bearer'
-        ];
-
-        $response
-            ->assertStatus(200)
-            ->assertJson($response->json())
-            ->assertJsonFragment($data);
+        $this->postJson(route('api.login'), [
+            'email' => $user->email,
+            'password' => $password,
+        ])
+        ->assertOk()
+        ->assertJsonStructure(['token']);
+        $this->assertAuthenticatedAs($user);
     }
+
+    public function testLogout()
+    {
+        $user = factory(User::class)->create();
+        $token = \JWTAuth::fromUser($user);
+
+        $this->postJson(route('api.logout').'?token='.$token)
+            ->assertOk()
+            ->assertJsonStructure(['message']);
+    }
+    
 }
