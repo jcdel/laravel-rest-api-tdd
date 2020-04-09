@@ -50,5 +50,12 @@ class AuthTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(['message']);
     }
+
+    public function testLogoutUnAuthorizedUser()
+    {
+        $response = $this->postJson(route('api.logout'))
+            ->assertUnauthorized();
+            $this->assertEquals('Unauthenticated.', $response['message']);
+    }
     
 }
